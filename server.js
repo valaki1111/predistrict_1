@@ -13,11 +13,17 @@ const answersRoutes = require('./routes/answers');
 const telegramRoutes = require('./routes/telegram'); // ÚJ
 
 const app = express();
-const PORT = 3000;
 
-mongoose.connect('mongodb://localhost:27017/predistrict')
+// FONTOS: Render a PORT környezeti változót használja
+const PORT = process.env.PORT || 3000;
+
+// MongoDB URI a környezeti változóból
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/predistrict';
+
+// Csatlakozás MongoDB-hez
+mongoose.connect(MONGO_URI)
   .then(() => console.log('✅ MongoDB connected'))
-  .catch(err => console.error(err));
+  .catch(err => console.error('❌ MongoDB connection error:', err));
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -39,4 +45,5 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: err.message });
 });
 
-app.listen(PORT, () => console.log(`✅ Running at http://localhost:${PORT}`));
+// Indítás
+app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
