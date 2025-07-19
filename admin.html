@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Predistrict Admin</title>
+  <link rel="icon" href="favicon.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      margin: 0;
+      padding: 2rem;
+      background: url('background.png') no-repeat center center fixed;
+      background-size: cover;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: #fff;
+      min-height: 100vh;
+      text-align: center;
+    }
+    h1, h2 {
+      color: #ffcc00;
+      text-shadow: 0 0 10px rgba(0,0,0,0.7);
+      margin-bottom: 1rem;
+    }
+    form {
+      max-width: 600px;
+      margin: 1rem auto 3rem auto;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 1.5rem 2rem;
+      border-radius: 12px;
+      box-shadow: 0 0 15px #ffcc00;
+      text-align: left;
+    }
+    form label {
+      display: block;
+      margin-top: 1rem;
+      font-weight: bold;
+      color: #ffcc00;
+    }
+    form input[type="text"] {
+      width: 100%;
+      padding: 0.5rem;
+      margin-top: 0.3rem;
+      border-radius: 6px;
+      border: none;
+      font-size: 1rem;
+    }
+    form button {
+      margin-top: 1.5rem;
+      background: #ffcc00;
+      color: #000;
+      border: none;
+      border-radius: 8px;
+      padding: 0.7rem 1.5rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.3s;
+      display: block;
+      width: 100%;
+    }
+    form button:hover {
+      background: #e6b800;
+    }
+    #addQuestionStatus {
+      margin-top: 1rem;
+      font-weight: bold;
+      min-height: 1.2em;
+    }
+    #leaderboard {
+      max-width: 400px;
+      margin: 0 auto 3rem auto;
+      background: rgba(0,0,0,0.7);
+      border-radius: 12px;
+      padding: 1rem 2rem;
+      box-shadow: 0 0 15px #ffcc00;
+      text-align: left;
+    }
+    #leaderboard ul {
+      list-style: none;
+      padding-left: 0;
+      margin: 0;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    #leaderboard ul li {
+      padding: 0.4rem 0;
+      border-bottom: 1px solid #444;
+      font-size: 1rem;
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+
+  <script>
+    // Egyszerű jelszókérés
+    const password = prompt('Enter admin password:');
+    const correctPassword = 'admin123'; // Ezt állítsd be a kívánt jelszóra
+
+    if (password !== correctPassword) {
+      document.body.innerHTML = '<h1 style="color:#ff6666; text-align:center; margin-top:3rem;">Access denied. Wrong password.</h1>';
+      throw new Error('Access denied. Wrong password.');
+    }
+  </script>
+
+  <h1>Admin Panel</h1>
+
+  <form id="addQuestionForm">
+    <h2>Add New Question</h2>
+
+    <label for="questionText">Question Text *</label>
+    <input type="text" id="questionText" placeholder="Enter the question" required />
+
+    <label>Options (at least 2 required) *</label>
+    <input type="text" id="option1" placeholder="Option 1" required />
+    <input type="text" id="option2" placeholder="Option 2" required />
+    <input type="text" id="option3" placeholder="Option 3 (optional)" />
+    <input type="text" id="option4" placeholder="Option 4 (optional)" />
+
+    <label for="correctAnswer">Correct Answer (optional)</label>
+    <input type="text" id="correctAnswer" placeholder="Enter correct answer text" />
+
+    <button type="submit">Add Question</button>
+
+    <div id="addQuestionStatus"></div>
+  </form>
+
+  <div id="leaderboard">
+    <h2>🏆 Leaderboard</h2>
+    <ul id="leaderboardList">
+      <li>Loading rankings...</li>
+    </ul>
+  </div>
+
+  <script>
+    // Betölti a ranglistát és megjeleníti
+    async function loadLeaderboard() {
+      const lbList = document.getElementById('leaderboardList');
+      lbList.innerHTML = '<li>Loading rankings...</li>';
+      try {
+        const res = await fetch('/api/leaderboard/all');
+        if (!res.ok) throw new Error('Failed to load leaderboard');
+        const data = await res.json();
+        lbList.innerHTML = '';
+        if (!data.users || data.users.length === 0) {
+          lbList.innerHTML = '<li>No leaderboard data.</li>';
+          return;
+        }
+        data.users.slice(0, 25).forEach((user, idx) => {
+          const li = document.createElement('li');
+          li.textContent = `#${idx + 1} ${user.username}: ${user.points} pts`;
+          lbList.appendChild(li);
+        });
+      } catch (err) {
+        lbList.innerHTML = '<li style="color:#ff6666;">Failed to load leaderboard.</li>';
+        console.error(err);
+      }
+    }
+
+    // Kérdés hozzáadása form beküldésekor
+    document.getElementById('addQuestionForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const status = document.getElementById('addQuestionStatus');
+      status.textContent = '';
+
+      const text = document.getElementById('questionText').value.trim();
+      const options = [
+        document.getElementById('option1').value.trim(),
+        document.getElementById('option2').value.trim(),
+        document.getElementById('option3').value.trim(),
+        document.getElementById('option4').value.trim()
+      ].filter(o => o.length > 0);
+
+      const correctAnswer = document.getElementById('correctAnswer').value.trim() || null;
+
+      if (!text) {
+        status.textContent = 'Question text is required.';
+        return;
+      }
+      if (options.length < 2) {
+        status.textContent = 'Please enter at least 2 options.';
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/questions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text, options, correctAnswer }),
+        });
+        if (!res.ok) {
+          const errData = await res.json();
+          throw new Error(errData.message || 'Failed to add question');
+        }
+        status.style.color = '#00ff00';
+        status.textContent = 'Question added successfully!';
+        e.target.reset();
+        loadLeaderboard();
+      } catch (err) {
+        status.style.color = '#ff6666';
+        status.textContent = 'Failed to add question: ' + err.message;
+        console.error(err);
+      }
+    });
+
+    // Oldal betöltésekor ranglista betöltése
+    loadLeaderboard();
+  </script>
+
+</body>
+</html>

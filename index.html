@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Predistrict – Knowledge Prediction Game</title>
+  <link rel="icon" href="favicon.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    body {
+      margin: 0;
+      height: 100vh;
+      background: url('background.png') no-repeat center center fixed;
+      background-size: cover;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      animation: fadeIn 1.2s ease forwards;
+      text-align: center;
+      padding-bottom: 50px; /* Hely a fix footernek */
+      box-sizing: border-box;
+    }
+
+    img.logo {
+      width: 180px;
+      margin-bottom: 2rem;
+      animation: fadeIn 1.5s ease forwards;
+    }
+
+    h1 {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      text-shadow: 0 0 10px rgba(255, 204, 0, 0.8);
+    }
+
+    p {
+      font-size: 1.2rem;
+      margin-bottom: 2rem;
+      max-width: 480px;
+      text-shadow: 0 0 8px rgba(0, 0, 0, 0.4);
+    }
+
+    .btn {
+      background-color: #ffcc00;
+      color: #000;
+      font-weight: 700;
+      border: none;
+      border-radius: 12px;
+      padding: 1rem 2.5rem;
+      margin: 0.5rem;
+      cursor: pointer;
+      box-shadow: 0 0 8px rgba(255, 204, 0, 0.6);
+      transition: background-color 0.3s ease;
+      font-size: 1.2rem;
+      user-select: none;
+      animation: fadeIn 1.8s ease forwards;
+    }
+
+    .btn:hover {
+      background-color: #e6b800;
+    }
+
+    .private-league {
+      margin-top: 2rem;
+      padding: 1rem 2rem;
+      background: rgba(0, 0, 0, 0.5);
+      border-radius: 12px;
+      box-shadow: 0 0 15px rgba(255, 204, 0, 0.5);
+      animation: fadeIn 2s ease forwards;
+    }
+
+    input[type="text"] {
+      padding: 0.6rem;
+      font-size: 1rem;
+      border-radius: 8px;
+      border: none;
+      width: 240px;
+      margin-bottom: 0.5rem;
+    }
+
+    #createLeagueMsg {
+      color: #ffcc00;
+      margin-top: 0.5rem;
+    }
+
+footer {
+  position: fixed;
+  bottom: 15px;
+  left: 0;
+  width: 100%;
+  text-align: center;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.7);
+  user-select: none;
+  /* background: rgba(0,0,0,0.2); */  /* Ezt töröld vagy kommenteld ki */
+  padding: 5px 0;
+  box-sizing: border-box;
+  z-index: 1000;
+}
+
+  </style>
+</head>
+<body>
+
+  <img src="logo.png" alt="Predistrict Logo" class="logo" />
+
+  <h1>Predict the Future. Get Rewarded.</h1>
+  <p>Join our Web3 skill-based prediction game. No betting, no luck — just knowledge.</p>
+
+  <div>
+    <button onclick="location.href='register.html'" class="btn">📝 Register</button>
+    <button onclick="location.href='login.html'" class="btn">🔑 Login</button>
+  </div>
+
+  <div class="private-league">
+    <h3 style="margin-bottom: 0.5rem;">Create Private League</h3>
+    <input type="text" id="leagueNameInput" placeholder="League Name (min. 3 characters)" />
+    <br />
+    <button id="createPrivateLeagueBtn" class="btn">Create Private League</button>
+    <div id="createLeagueMsg"></div>
+  </div>
+
+  <footer>© 2025 Predistrict – All rights reserved.</footer>
+
+  <script>
+    async function createPrivateLeague() {
+      const leagueName = document.getElementById('leagueNameInput').value.trim();
+      const msg = document.getElementById('createLeagueMsg');
+
+      if (leagueName.length < 3) {
+        msg.textContent = 'League name must be at least 3 characters.';
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/league/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: leagueName, private: true })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          msg.textContent = data.message || 'Failed to create league.';
+          return;
+        }
+
+        // Save league ID before registration
+        localStorage.setItem('pendingPrivateLeagueId', data._id);
+        location.href = 'register.html';
+      } catch (err) {
+        msg.textContent = 'Network error: ' + err.message;
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const btn = document.getElementById('createPrivateLeagueBtn');
+      if (btn) {
+        btn.addEventListener('click', createPrivateLeague);
+      }
+    });
+  </script>
+</body>
+</html>
